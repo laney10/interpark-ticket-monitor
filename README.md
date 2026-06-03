@@ -1,5 +1,7 @@
 # Interpark Ticket Queue Monitor
 
+[中文文档](README.zh-CN.md)
+
 A Chrome extension that monitors the Interpark ticket waiting queue and sends desktop notifications when your queue position drops below preset thresholds.
 
 ## Features
