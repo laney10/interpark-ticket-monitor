@@ -1,0 +1,27 @@
+{
+  "manifest_version": 3,
+  "name": "Interpark 排队监控",
+  "version": "1.0.0",
+  "description": "监控 Interpark 购票排队进度，在序号降至阈值时发送桌面通知",
+  "permissions": ["storage", "notifications", "alarms"],
+  "host_permissions": ["https://tickets.interpark.com/*"],
+  "content_scripts": [
+    {
+      "matches": ["https://tickets.interpark.com/*"],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "排队监控"
+  },
+  "icons": {
+    "16": "icon16.png",
+    "48": "icon48.png",
+    "128": "icon128.png"
+  }
+}
