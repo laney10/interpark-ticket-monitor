@@ -1,107 +1,111 @@
-# Interpark 排队监控 — 使用指南
+# Interpark Ticket Queue Monitor
 
-## 功能简介
+A Chrome extension that monitors the Interpark ticket waiting queue and sends desktop notifications when your queue position drops below preset thresholds.
 
-监控 Interpark 购票排队页面，当排队序号降至预设阈值时，自动发送桌面通知提醒你。
+## Features
 
-| 特性 | 说明 |
-|------|------|
-| 监控目标 | 排队序号 "My waiting order" |
-| 通知阈值 | ≤ 1000、≤ 500、≤ 100 |
-| 通知次数 | 每个阈值仅通知一次（可重置） |
-| 后台保活 | 防标签页被 Chrome 挂起/回收 |
+| Feature | Detail |
+|---------|--------|
+| Target | "My waiting order" queue number |
+| Thresholds | ≤ 1000, ≤ 500, ≤ 100 |
+| Notifications | Once per threshold (resettable) |
+| Keep-alive | Prevents tab from being suspended by Chrome |
 
-## 安装
+## Installation
 
-1. 打开 Chrome，地址栏输入 `chrome://extensions` 并回车
-2. 打开右上角 **"开发者模式"** 开关
-3. 点击左上角 **"加载已解压的扩展程序"**
-4. 选择 `ticket-monitor` 文件夹
-5. 安装完成，工具栏会出现扩展图标
+1. Open Chrome and go to `chrome://extensions`
+2. Enable **"Developer mode"** (toggle in the top-right corner)
+3. Click **"Load unpacked"** (top-left)
+4. Select the `ticket-monitor` folder
+5. The extension icon will appear in your toolbar
 
-> **注意**：安装或更新扩展后，需要**关闭并重新打开**排队页面才能生效。
+> **Note**: After installing or updating the extension, you must **close and reopen** the queue page for changes to take effect.
 
-## 使用方式
+## Usage
 
-### 开始监控
+### Start Monitoring
 
-1. 正常进入 Interpark 排队页面（URL 类似 `https://tickets.interpark.com/waiting?key=...`）
-2. 扩展会自动开始监控，无需任何操作
-3. 排队序号变化时自动检测，到达阈值时弹出桌面通知
+1. Navigate to the Interpark queue page (URL pattern: `https://tickets.interpark.com/waiting?key=...`)
+2. The extension starts monitoring automatically — no action needed
+3. When your queue number crosses a threshold, a desktop notification will pop up
 
-### 查看状态
+### Check Status
 
-点击浏览器工具栏的扩展图标，弹窗中会显示：
+Click the extension icon in the toolbar to open the popup:
 
-- **当前排队序号** — 大号数字实时显示
-- **阈值状态** — 三个阈值各自显示"等待中"或"已通知 ✓"
-- **重置通知** — 点击按钮可将所有阈值恢复为"等待中"状态，用于新一轮排队
+- **Current queue number** — large real-time display
+- **Threshold status** — each threshold shows "Waiting" or "Notified ✓"
+- **Reset button** — resets all thresholds back to "Waiting" for a new queue session
 
-### 收到通知
+### Notifications
 
-当排队序号降到阈值以下时，桌面右下角弹出系统通知：
+When your queue number drops below a threshold, a system notification appears:
 
-> **排队进度提醒**
-> 当前排队序号已降至 987（阈值 1000），距离购票更近了！
+> **Queue Progress Alert**
+> Your queue number has dropped to 987 (threshold: 1000). You're getting closer!
 
-## 工作流程
+## Architecture
 
 ```
-排队页面 (content.js)
-  ├── MutationObserver → 监测 DOM 实时变化
-  ├── 20 秒定时轮询 → 兜底保障
-  └── 静默音频播放 → 防止标签被挂起
+Queue page (content.js)
+  ├── MutationObserver → real-time DOM change detection
+  ├── 20s polling → fallback
+  └── Silent audio → prevents tab suspension
         │
         ▼  chrome.runtime.sendMessage
         │
 Service Worker (background.js)
-  ├── 接收序号更新
-  ├── 判断是否触发阈值
-  ├── 发送桌面通知
-  └── chrome.alarms 每 20s 主动查询 → 双向保活
+  ├── Receives queue number updates
+  ├── Checks threshold conditions
+  ├── Fires desktop notifications
+  └── chrome.alarms every 20s → bidirectional keep-alive
 ```
 
-## 测试方法
+## Testing
 
-在排队页面的 DevTools Console（F12）中运行以下命令模拟：
+Open DevTools Console (F12) on the queue page and run:
 
 ```js
-// 模拟序号降至 999（触发 ≤1000 通知）
+// Simulate queue number dropping to 999 (triggers ≤1000 notification)
 document.querySelector('[class*="StatusBox_mainText"] strong').textContent = '999';
 
-// 模拟序号降至 499（触发 ≤500 通知）
+// Simulate queue number dropping to 499 (triggers ≤500 notification)
 document.querySelector('[class*="StatusBox_mainText"] strong').textContent = '499';
 
-// 模拟序号降至 99（触发 ≤100 通知）
+// Simulate queue number dropping to 99 (triggers ≤100 notification)
 document.querySelector('[class*="StatusBox_mainText"] strong').textContent = '99';
 ```
 
-测试后点击扩展弹窗中的"重置通知"按钮即可恢复。
+Click "Reset" in the extension popup to clear triggered thresholds after testing.
 
-## 故障排查
+## Troubleshooting
 
-| 现象 | 解决方法 |
-|------|----------|
-| 扩展不工作、控制台无日志 | 刷新扩展 ⟳ 后，**关闭并重新打开**排队页面 |
-| 通知不弹出 | 检查系统通知设置，确保 Chrome 通知未被屏蔽 |
-| 标签页仍被挂起 | 确保在排队页面上有过一次点击/键盘操作（激活音频保活） |
-| Popup 显示 "--" | 排队页面可能未打开，或页面不在前台 |
+| Symptom | Fix |
+|---------|-----|
+| Extension not working, no console logs | Reload the extension ⟳, then **close and reopen** the queue page |
+| Notifications not appearing | Check system notification settings — ensure Chrome notifications are allowed |
+| Tab still gets suspended | Make sure you've clicked or pressed a key once on the queue page (activates audio keep-alive) |
+| Popup shows "--" | The queue page may not be open, or the tab is not in focus |
 
-### 查看后台日志
+### Viewing Logs
 
-1. **页面日志**：排队页面 → F12 → Console → 过滤 `[TicketMonitor]`
-2. **后台日志**：`chrome://extensions` → 点击扩展卡片上的 "Service Worker" 链接
+1. **Page logs**: Queue page → F12 → Console → filter `[TicketMonitor]`
+2. **Background logs**: `chrome://extensions` → click "Service Worker" link on the extension card
 
-## 文件结构
+## File Structure
 
 ```
 ticket-monitor/
-├── manifest.json      # Chrome 扩展配置 (MV3)
-├── content.js         # 注入排队页面，DOM 监听 + 数据提取
-├── background.js      # Service Worker，通知逻辑 + 状态管理
-├── popup.html         # 弹窗界面
-├── popup.js           # 弹窗逻辑
-├── icon16.png         # 扩展图标 16x16
-├── icon48.png         # 扩展图标 48x48
-└── icon128.png        # 扩展图标 128x128
+├── manifest.json      # Chrome extension config (Manifest V3)
+├── content.js         # Injected into queue page: DOM watcher + data extraction
+├── background.js      # Service worker: notification logic + state management
+├── popup.html         # Popup UI
+├── popup.js           # Popup logic
+├── icon16.png         # Extension icon 16x16
+├── icon48.png         # Extension icon 48x48
+└── icon128.png        # Extension icon 128x128
 ```
+
+## License
+
+MIT
